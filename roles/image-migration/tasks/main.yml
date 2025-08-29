@@ -3,7 +3,7 @@
   ansible.builtin.command: >
     skopeo login {{ openshift_cluster_url | replace('https://api.', 'default-route-openshift-image-registry.apps.') | replace(':6443', '') }}
     --username={{ openshift_username | default('kubeadmin') }}
-    --password={{ openshift_token }}
+    --password={{ openshift_token }} --tls-verify=false
   register: openshift_login
   failed_when: openshift_login.rc != 0
   check_mode: false
