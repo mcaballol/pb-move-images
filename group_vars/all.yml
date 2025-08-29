@@ -1,0 +1,24 @@
+---
+# OpenShift cluster configuration
+openshift_cluster_url: "https://api.cluster.example.com:6443"
+openshift_token: "your-openshift-token-here"
+openshift_namespaces:
+  - "default"
+  - "openshift"
+  - "kube-system"
+
+# Quay registry configuration
+quay_registry: "quay.io"
+quay_organization: "your-organization"
+quay_username: "your-username"
+quay_password: "your-password"
+
+# Image migration settings
+image_prefix: ""
+dry_run: false
+parallel_jobs: 5
+
+# Additional settings
+insecure_registry: true
+src_tls_verify: false
+dest_tls_verify: false 

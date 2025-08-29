@@ -1,0 +1,28 @@
+---
+# Ejemplo de archivo de variables locales
+# Copia este archivo a group_vars/local.yml y edita con tus valores
+
+# OpenShift cluster configuration
+openshift_cluster_url: "https://api.tu-cluster-openshift.com:6443"
+openshift_token: "sha256~tu-token-real-aqui"
+openshift_namespaces:
+  - "default"
+  - "openshift"
+  - "kube-system"
+  - "tu-proyecto"
+
+# Quay registry configuration
+quay_registry: "quay.io"
+quay_organization: "tu-organizacion"
+quay_username: "tu-usuario-quay"
+quay_password: "tu-password-quay"
+
+# Image migration settings
+image_prefix: "openshift-"
+dry_run: true  # Cambiar a false cuando estés listo
+parallel_jobs: 3
+
+# Additional settings
+insecure_registry: true
+src_tls_verify: false
+dest_tls_verify: false 

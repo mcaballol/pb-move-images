@@ -1,0 +1,76 @@
+---
+- name: Login to OpenShift registry
+  ansible.builtin.command: >
+    skopeo login {{ openshift_cluster_url | replace('https://api.', 'default-route-openshift-image-registry.apps.') | replace(':6443', '') }}
+    --username={{ openshift_username | default('kubeadmin') }}
+    --password={{ openshift_token }}
+  register: openshift_login
+  failed_when: openshift_login.rc != 0
+  check_mode: false
+  when: not dry_run
+# - ansible.builtin.debug:
+#     var: openshift_login
+
+- name: Login to Quay registry
+  ansible.builtin.command: >
+    skopeo login {{ quay_registry }}
+    --username={{ quay_username }}
+    --password={{ quay_token }}
+  register: quay_login
+  failed_when: quay_login.rc != 0
+  check_mode: false
+  when: not dry_run
+
+# - ansible.builtin.debug:
+#     var: quay_login
+
+- name: Copy images to Quay registry
+  ansible.builtin.command: >
+    skopeo copy
+    --src-tls-verify=false
+    --src-creds={{ openshift_username | default('kubeadmin')  }}:{{ openshift_token }}
+    --dest-tls-verify=false
+    --dest-creds={{ quay_username }}:{{ quay_token }}
+    docker://{{ item.source_image }}
+    docker://{{ item.target_image }}
+  register: image_copy_result
+  loop: "{{ images_to_migrate }}"
+  failed_when: false
+  check_mode: false
+  when: not dry_run
+
+- name: Display copy results
+  ansible.builtin.debug:
+    msg: "{{ item.item.source_image }} -> {{ item.item.target_image }}: {{ 'SUCCESS' if item.rc == 0 else 'FAILED' }}"
+  loop: "{{ image_copy_result.results }}"
+  when: not dry_run
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Count successful copies
+  ansible.builtin.set_fact:
+    successful_copies: "{{ image_copy_result.results | selectattr('rc', 'equalto', 0) | list | length }}"
+  when: not dry_run
+
+- name: Count failed copies
+  ansible.builtin.set_fact:
+    failed_copies: "{{ image_copy_result.results | selectattr('rc', 'ne', 0) | list | length }}"
+  when: not dry_run
+
+- name: Display summary
+  ansible.builtin.debug:
+    msg: "Migration completed. Successful: {{ successful_copies | default(0) }}, Failed: {{ failed_copies | default(0) }}"
+  when: not dry_run
+
+- name: Dry run mode - show what would be copied
+  ansible.builtin.debug:
+    msg: "DRY RUN: Would copy {{ images_to_migrate | length }} images to Quay registry"
+  when: dry_run
+
+- name: Dry run mode - show sample commands
+  ansible.builtin.debug:
+    msg: "Sample skopeo command: skopeo copy --src-tls-verify=false --dest-tls-verify=false docker://{{ item.source_image }} docker://{{ item.target_image }}"
+  loop: "{{ images_to_migrate[:3] }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: dry_run

@@ -1,0 +1,48 @@
+---
+- name: Example - Create Quay repository with robot account
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    # Configuración de Quay
+    quay_registry: "{{ lookup('env', 'QUAY_REGISTRY') | default('quay.io') }}"
+    quay_token: "{{ lookup('env', 'QUAY_TOKEN') | default('') }}"
+    quay_username: "{{ lookup('env', 'QUAY_USERNAME') | default('') }}"
+    quay_password: "{{ lookup('env', 'QUAY_PASSWORD') | default('') }}"
+    quay_namespace: "{{ lookup('env', 'QUAY_NAMESPACE') }}"
+    quay_repository_name: "{{ lookup('env', 'QUAY_REPOSITORY_NAME') }}"
+    quay_robot_account: "{{ lookup('env', 'QUAY_ROBOT_ACCOUNT') }}"
+    
+    # Configuración opcional del repositorio
+    quay_repository_description: "Repositorio de ejemplo para CI/CD"
+    quay_repository_visibility: "private"
+    quay_repo_kind: "image"
+  
+  pre_tasks:
+    - name: Verify required environment variables
+      ansible.builtin.fail:
+        msg: "Variable de entorno {{ item }} no está definida"
+      when: lookup('env', item) is not defined
+      loop:
+        - QUAY_TOKEN
+        - QUAY_NAMESPACE
+        - QUAY_REPOSITORY_NAME
+        - QUAY_ROBOT_ACCOUNT
+  
+  roles:
+    - quay-management
+  
+  post_tasks:
+    - name: Display robot account credentials
+      ansible.builtin.debug:
+        msg: |
+          Robot account creado: {{ quay_namespace }}+{{ quay_robot_account }}
+          
+          Para usar este robot account en Docker:
+          docker login quay.io -u {{ quay_namespace }}+{{ quay_robot_account }} -p <TOKEN>
+          
+          Para usar en Kubernetes:
+          kubectl create secret docker-registry quay-secret \
+            --docker-server=quay.io \
+            --docker-username={{ quay_namespace }}+{{ quay_robot_account }} \
+            --docker-password=<TOKEN>

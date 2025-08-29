@@ -1,0 +1,37 @@
+---
+- name: Migrate OpenShift Images to Quay Registry
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # OpenShift cluster configuration
+    openshift_cluster_url: "{{ openshift_cluster_url | default('https://api.cluster.example.com:6443') }}"
+    openshift_token: "{{ openshift_token | default('your-openshift-token') }}"
+    openshift_namespaces: "{{ openshift_namespaces | default(['default', 'openshift']) }}"
+    
+    # Quay registry configuration
+    quay_registry: "{{ quay_registry | default('quay.io') }}"
+    quay_organization: "{{ quay_organization | default('your-org') }}"
+    quay_username: "{{ quay_username | default('your-username') }}"
+    quay_password: "{{ quay_password | default('your-password') }}"
+    
+    # Image migration settings
+    image_prefix: "{{ image_prefix | default('') }}"
+    dry_run: "{{ dry_run | default(false) }}"
+    parallel_jobs: "{{ parallel_jobs | default(5) }}"
+    
+  tasks:
+    - name: Include OpenShift connection role
+      include_role:
+        name: openshift-connection
+        
+    - name: Include image discovery role
+      include_role:
+        name: image-discovery
+
+    # - name: Include repository creation role
+    #   include_role:
+    #     name: quay-management
+        
+    - name: Include image migration role
+      include_role:
+        name: image-migration 

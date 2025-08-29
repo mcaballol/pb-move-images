@@ -1,0 +1,86 @@
+---
+- name: Check if authentication is required
+  ansible.builtin.fail:
+    msg: |
+      Se requiere autenticación. Proporciona una de estas opciones:
+      1. quay_token: Token de API directo
+      2. quay_username + quay_password: Credenciales para obtener token
+  when:
+    - quay_token == ""
+
+- name: Ensure the repository has the exact set of permissions
+  infra.quay_configuration.quay_repository:
+    name: "{{ quay_organization if (create_repository_in_org | default(false)) else quay_username }}/{{ item.namespace }}/{{ item.name }}"
+    perms:
+      - name: "{{ quay_organization if (create_repository_in_org | default(false)) else quay_username }}+{{ quay_robot_account }}"
+        type: user
+        role: write
+    append: false
+    state: present
+    quay_host: "{{ quay_api_url }}"
+    #quay_username: "{{ quay_username }}"
+    #quay_password: "{{ quay_token }}"
+    quay_token: "{{ quay_token }}"
+  loop: "{{ images_to_migrate | default([]) }}"
+  #failed_when: false
+  #check_mode: false
+  when:
+    - not dry_run
+# - name: Create Quay repository
+#   ansible.builtin.uri:
+#     url: "{{ quay_api_url }}/api/v1/repository"
+#     method: POST
+#     headers:
+#       Authorization: "Bearer {{ quay_token }}"
+#       Content-Type: "application/json"
+#     body_format: json
+#     body:
+#       namespace: "{{ quay_organization }}"
+#       repository: "{{ item.namespace }}/{{ item.name }}"
+#       description: "{{ quay_repository_description | default('Repository created by Ansible') }}"
+#       visibility: "{{ quay_repository_visibility | default('private') }}"
+#       repo_kind: "{{ quay_repo_kind | default('image') }}"
+#     status_code: [200, 201, 409]
+#   register: create_repo_result
+#   # failed_when:
+#   #   - create_repo_result.status not in [200, 201, 409]
+#   #   - "'already exists' not in create_repo_result.msg | default('')"
+#   loop: "{{ images_to_migrate }}"
+#   failed_when: false
+#   check_mode: false
+#   when:
+#     - not dry_run
+
+
+
+# - name: Grant write permissions to robot account
+#   ansible.builtin.uri:
+#     url: "{{ quay_api_url }}/api/v1/repository/{{ quay_organization if (create_repository_in_org | default(false)) else quay_username  }}/{{ item.namespace }}/{{ item.name }}/permissions/user/{{ quay_organization if (create_repository_in_org | default(false)) else quay_username }}+{{ quay_robot_account }}"
+#     method: PUT
+#     headers:
+#       Authorization: "Bearer {{ quay_token }}"
+#       Content-Type: "application/json"
+#     body_format: json
+#     body:
+#       role: "write"
+#     status_code: [200, 201]
+#   register: permission_result
+#   loop: "{{ images_to_migrate | default([]) }}"
+#   failed_when: false
+#   check_mode: false
+#   when:
+#     - not dry_run
+#     - quay_robot_account is defined
+
+# - ansible.builtin.debug:
+#     var: permission_result
+
+# - name: Display repository information
+#   ansible.builtin.debug:
+#     msg: |
+#       Repository created/updated successfully:
+#       - Name: {{ quay_namespace }}/{{ quay_repository_name }}
+#       - URL: {{ quay_api_url }}/repository/{{ quay_namespace }}/{{ quay_repository_name }}
+#       - Robot Account: {{ quay_namespace }}+{{ quay_robot_account | default('Not configured') }}
+#       - Permissions: Write access granted to robot account
+#   when: create_repo_result.status in [200, 201, 409]

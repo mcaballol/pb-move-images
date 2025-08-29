@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: "ChileCompra DevOps Team"
+  description: "Role para gestionar repositorios en Quay.io y asignar permisos a robot accounts"
+  company: "ChileCompra"
+  license: "MIT"
+  min_ansible_version: "2.9"
+  platforms:
+    - name: EL
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+    - name: macOS
+      versions:
+        - all
+  galaxy_tags:
+    - quay
+    - container
+    - registry
+    - cicd
+    - devops
+
+dependencies: []

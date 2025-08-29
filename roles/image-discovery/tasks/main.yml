@@ -1,0 +1,60 @@
+---
+- name: Get all imagestreams from specified namespaces
+  ansible.builtin.command: >
+    oc get imagestreams -n {{ item }} -o json
+  register: imagestreams_result
+  loop: "{{ openshift_namespaces }}"
+  failed_when: false
+  check_mode: false
+# - ansible.builtin.debug:
+#     var: imagestreams_result
+
+# - ansible.builtin.debug:
+#     var: (item.stdout | from_json)
+#   loop: "{{ imagestreams_result.results }}"
+#   loop_control:
+#     label: "{{ item.item }}"
+- name: Parse imagestreams JSON and extract image information1
+  ansible.builtin.set_fact:
+    all_imagestreams: "{{ all_imagestreams | default([]) + (((item.stdout | from_json | json_query('items')) | default([], true)) | map('combine', {'namespace': item.item})) | list }}"
+  loop: "{{ imagestreams_result.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout != ""
+
+- name: Filter imagestreams with tags
+  ansible.builtin.set_fact:
+    imagestreams_with_tags: "{{ all_imagestreams | selectattr('status.tags', 'defined') | list }}"
+
+- name: Create detailed image list for migration
+  ansible.builtin.set_fact:
+    images_to_migrate: "{{ images_to_migrate | default([]) + [{
+      'name': item.0.metadata.name,
+      'namespace': item.0.metadata.namespace,
+      'source_image': (item.0.status.publicDockerImageRepository | default(item.0.status.dockerImageRepository)) + ':' + item.1.tag,
+      'target_image': quay_registry + '/' + (quay_organization if (create_repository_in_org | default(false)) else quay_username) + '/' + item.0.metadata.namespace + '/' + item.0.metadata.name + ':' + item.1.tag,
+      'latest_tag': item.1.tag
+    }] }}"
+  loop: "{{ query('subelements', imagestreams_with_tags, 'status.tags', skip_missing=True) }}"
+  loop_control:
+    label: "{{  item.0.metadata.namespace + '/' +item.0.metadata.name + ':' + item.1.tag}}"
+
+# - name: Create detailed image list for migration
+#   ansible.builtin.set_fact:
+#     images_to_migrate: "{{ images_to_migrate | default([]) + [{
+#       'source_image': (item.status.publicDockerImageRepository | default(item.status.dockerImageRepository)) + ':' + item.status.tags[0].tag,
+#       'target_image': quay_registry + '/' + quay_organization + '/' + (image_prefix + item.metadata.name if image_prefix else item.metadata.name) + ':' + item.status.tags[0].tag,
+#       'latest_tag': item.status.tags[0].tag
+#     }] }}"
+#   loop: "{{ imagestreams_with_tags }}"
+
+- name: Display images to be migrated
+  ansible.builtin.debug:
+    msg: "Found {{ images_to_migrate | length }} images to migrate"
+  when: images_to_migrate is defined
+
+- name: Show sample of images to migrate
+  ansible.builtin.debug:
+    msg: "Sample images: {{ images_to_migrate[:3] | map(attribute='source_image') | list }}"
+  when: images_to_migrate is defined and images_to_migrate | length > 0
+

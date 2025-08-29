@@ -1,0 +1,41 @@
+---
+- name: Check if oc command is available
+  ansible.builtin.command: which oc
+  register: oc_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if oc command is not available
+  ansible.builtin.fail:
+    msg: "OpenShift CLI (oc) is not installed. Please install it first."
+  when: oc_check.rc != 0
+
+- name: Check if skopeo command is available
+  ansible.builtin.command: which skopeo
+  register: skopeo_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if skopeo command is not available
+  ansible.builtin.fail:
+    msg: "Skopeo is not installed. Please install it first."
+  when: skopeo_check.rc != 0
+
+- name: Login to OpenShift cluster
+  ansible.builtin.command: >
+    oc login {{ openshift_cluster_url }}
+    --token={{ openshift_token }}
+    --insecure-skip-tls-verify=true
+  register: oc_login
+  failed_when: oc_login.rc != 0
+  check_mode: false
+
+- name: Verify OpenShift connection
+  ansible.builtin.command: oc whoami
+  register: oc_whoami
+  failed_when: oc_whoami.rc != 0
+  check_mode: false
+
+- name: Display OpenShift user info
+  ansible.builtin.debug:
+    msg: "Successfully connected to OpenShift as: {{ oc_whoami.stdout }}" 

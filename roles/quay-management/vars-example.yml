@@ -1,0 +1,39 @@
+---
+# Ejemplo de variables para el role quay-management
+# Copia este archivo y renómbralo según tus necesidades
+
+# Configuración de la API de Quay
+quay_registry: "quay.io"  # o tu instancia privada de Quay
+quay_api_url: "https://{{ quay_registry }}"
+
+# Opción 1: Autenticación con token directo
+quay_token: "tu-token-de-quay-aqui"
+
+# Opción 2: Autenticación con usuario y contraseña
+quay_username: "tu-usuario"
+quay_password: "tu-contraseña"
+
+# Configuración del repositorio
+quay_namespace: "mi-empresa"  # o tu organización en Quay
+quay_repository_name: "mi-aplicacion"
+quay_repository_description: "Descripción personalizada del repositorio"
+quay_repository_visibility: "private"  # public o private
+quay_repo_kind: "image"  # image o application
+
+# Configuración del robot account
+quay_robot_account: "deploy-bot"  # nombre del robot account
+
+# Ejemplos de uso:
+# 
+# 1. Repositorio público para aplicación web:
+# quay_repository_visibility: "public"
+# quay_repository_description: "Aplicación web frontend"
+# 
+# 2. Repositorio privado para microservicio:
+# quay_repository_visibility: "private"
+# quay_repository_description: "Microservicio de autenticación"
+# quay_robot_account: "auth-service-bot"
+# 
+# 3. Repositorio para aplicación (no imagen):
+# quay_repo_kind: "application"
+# quay_repository_description: "Aplicación Helm chart"

@@ -1,0 +1,18 @@
+---
+# Quay API configuration
+quay_api_url: "https://{{ quay_registry }}"
+quay_registry: "{{ lookup('env', 'QUAY_REGISTRY') | default('quay.io') }}"
+quay_username: "{{ lookup('env', 'QUAY_USERNAME') | default('') }}"
+quay_password: "{{ lookup('env', 'QUAY_PASSWORD') | default('') }}"
+quay_token: "{{ lookup('env', 'QUAY_TOKEN') | default('') }}"
+
+# Repository configuration
+quay_namespace: "{{ lookup('env', 'QUAY_NAMESPACE') | default('') }}"
+quay_repository_name: "{{ lookup('env', 'QUAY_REPOSITORY_NAME') | default('') }}"
+quay_repository_description: "Repository created by Ansible"
+quay_repository_visibility: "private"  # Options: public, private
+quay_repo_kind: "image"  # Options: image, application
+
+# Robot account configuration
+quay_robot_account: "{{ lookup('env', 'QUAY_ROBOT_ACCOUNT') | default('') }}"
+create_repository_in_org: false
